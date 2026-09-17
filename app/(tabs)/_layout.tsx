@@ -19,6 +19,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
+          display: "none",
           paddingTop: 8,
           paddingBottom: bottomPadding,
           height: tabBarHeight,
@@ -32,6 +33,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
+          tabBarStyle: { display: "none" },
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />

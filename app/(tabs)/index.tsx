@@ -1,6 +1,8 @@
-import { ScrollView, Text, View, TouchableOpacity } from "react-native";
-
+import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
+import { ActivityIndicator, BackHandler, Platform, StyleSheet, Text, View } from "react-native";
+import { WebView } from "react-native-webview";
 import { ScreenContainer } from "@/components/screen-container";
+import { VOZO_SITE_URL } from "@/lib/site-config";
 
 /**
  * Home Screen - NativeWind Example
@@ -14,35 +16,67 @@ import { ScreenContainer } from "@/components/screen-container";
  * - Responsive: standard Tailwind breakpoints work on web
  * - Custom colors defined in tailwind.config.js
  */
+const WebViewComponent = WebView as unknown as ComponentType<any>;
+
 export default function HomeScreen() {
+  const webViewRef = useRef<any>(null);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const handleAndroidBack = useCallback(() => {
+    if (canGoBack) {
+      webViewRef.current?.goBack();
+      return true;
+    }
+    return false;
+  }, [canGoBack]);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", handleAndroidBack);
+    return () => subscription.remove();
+  }, [handleAndroidBack]);
+
+  const handleNavigation = (event: any) => {
+    setCanGoBack(event.canGoBack);
+  };
+
   return (
-    <ScreenContainer className="p-6">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 gap-8">
-          {/* Hero Section */}
-          <View className="items-center gap-2">
-            <Text className="text-4xl font-bold text-foreground">Welcome</Text>
-            <Text className="text-base text-muted text-center">
-              Edit app/(tabs)/index.tsx to get started
-            </Text>
+    <ScreenContainer edges={["top", "bottom", "left", "right"]} containerClassName="bg-[#0b0b10]" className="bg-[#0b0b10]">
+      <View style={styles.root}>
+        <WebViewComponent
+          ref={webViewRef}
+          source={{ uri: VOZO_SITE_URL }}
+          style={styles.webview}
+          originWhitelist={["https://*", "http://*"]}
+          javaScriptEnabled
+          domStorageEnabled
+          mediaPlaybackRequiresUserAction={false}
+          allowsInlineMediaPlayback
+          allowsBackForwardNavigationGestures
+          setSupportMultipleWindows={false}
+          sharedCookiesEnabled
+          thirdPartyCookiesEnabled
+          onNavigationStateChange={handleNavigation}
+          onLoadStart={() => setLoading(true)}
+          onLoadEnd={() => setLoading(false)}
+          onError={() => setLoading(false)}
+          androidLayerType="hardware"
+        />
+        {loading && (
+          <View pointerEvents="none" style={styles.loader}>
+            <ActivityIndicator size="large" color="#d946ef" />
+            <Text style={styles.loaderText}>Abrindo Vozo Magpie Studio…</Text>
           </View>
-
-          {/* Example Card */}
-          <View className="w-full max-w-sm self-center bg-surface rounded-2xl p-6 shadow-sm border border-border">
-            <Text className="text-lg font-semibold text-foreground mb-2">NativeWind Ready</Text>
-            <Text className="text-sm text-muted leading-relaxed">
-              Use Tailwind CSS classes directly in your React Native components.
-            </Text>
-          </View>
-
-          {/* Example Button */}
-          <View className="items-center">
-            <TouchableOpacity className="bg-primary px-6 py-3 rounded-full active:opacity-80">
-              <Text className="text-background font-semibold">Get Started</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+        )}
+      </View>
     </ScreenContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: "#0b0b10" },
+  webview: { flex: 1, backgroundColor: "#0b0b10" },
+  loader: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", backgroundColor: "#0b0b10", gap: 14 },
+  loaderText: { color: "#d7cde3", fontSize: 14 },
+});
